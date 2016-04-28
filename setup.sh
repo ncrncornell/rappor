@@ -51,7 +51,7 @@ r-packages() {
 
 # R 3.0.2 on Trusty is out of date with CRAN, so we need this workaround.
 install-plyr-with-friends() {
-  if [[ "$_os" = "ubuntu" && $_version = "14.04"]]
+  if [[ "$_os" = "ubuntu" && $_version = "14.04" ]]
     then
   mkdir -p _tmp
   wget --directory _tmp \
