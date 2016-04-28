@@ -19,11 +19,18 @@ sudo=
 #set -o errexit
 
 find-OS() {
+  # this works for Ubuntu and openSUSE
   if [[ -f /etc/os-release ]]
     then
     _os=`grep -E "^ID=" /etc/os-release| awk -F= ' { print $2 }'`
     _version=`grep -E "^VERSION_ID" /etc/os-release | awk -F= ' { print $2 }'|sed 's/"//g'`
+  elif [[ -f /etc/redhat-release ]]
+  # duh
+  then
+     _os=`cat /etc/redhat-release | awk ' { print $1 } '`
+     _version=`cat /etc/redhat-release | awk ' { print $3 } '`
   fi
+
 }
 native-packages() {
   $sudo apt-get update
