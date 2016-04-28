@@ -26,7 +26,11 @@ die() {
 }
 
 run-markdown() {
-  local md=`which markdown || echo "cat"`
+  local md=`which markdown 2>/dev/null|| echo "cat"`
+  if [[ "$md" = "cat" ]]
+    then
+    local md=`which multimarkdown 2>/dev/null|| echo "cat"`
+  fi
 
   # Markdown is output unstyled; make it a little more readable.
   cat <<EOF
