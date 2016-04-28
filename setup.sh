@@ -8,22 +8,32 @@
 #
 # Usage:
 #   ./setup.sh [function name]
-# If run without specifing any function it will run: install-most 
+# If run without specifing any function it will run: install-most
 # which should cover all the packages needed to run the demo.
+#
+# Modified for openSUSE, non-root
+sudo=
 
-set -o nounset
-set -o pipefail
-set -o errexit
+#set -o nounset
+#set -o pipefail
+#set -o errexit
 
+find-OS() {
+  if [[ -f /etc/os-release ]]
+    then
+    _os=`grep -E "^ID=" /etc/os-release| awk -F= ' { print $2 }'`
+    _version=`grep -E "^VERSION_ID" /etc/os-release | awk -F= ' { print $2 }'|sed 's/"//g'`
+  fi
+}
 native-packages() {
-  sudo apt-get update
+  $sudo apt-get update
   # - build-essential for gcc compilers, invoked while installing R packages.
   # - gfortran Fortran compiler needed for glmnet.
   # - libblas-dev needed for limSolve.
   # - python-dev is for building the fastrand extension
   #
   # NOTE: we get R 3.0.2 on Trusty.
-  sudo apt-get install build-essential gfortran libblas-dev r-base python-dev graphviz
+  $sudo apt-get install build-essential gfortran libblas-dev r-base python-dev graphviz
 }
 
 r-packages() {
@@ -33,26 +43,38 @@ r-packages() {
   # RJSONIO, optparse: for decode_dist.R
   # RUnit: for unit tests
   # abind: for decode_test only
-  sudo R -e \
-    'install.packages(c("glmnet", "optparse", "limSolve", "RUnit", "abind", "RJSONIO"), repos="http://cran.rstudio.com/")'
+  # Cairo: don't know, but was missing
+  $sudo \
+  R -e \
+    'install.packages(c("glmnet", "optparse", "limSolve", "RUnit", "abind", "RJSONIO","Cairo"), repos="http://cran.rstudio.com/")'
 }
 
 # R 3.0.2 on Trusty is out of date with CRAN, so we need this workaround.
 install-plyr-with-friends() {
+  if [[ "$_os" = "ubuntu" && $_version = "14.04"]]
+    then
   mkdir -p _tmp
   wget --directory _tmp \
     http://cran.r-project.org/src/contrib/Archive/Rcpp/Rcpp_0.11.4.tar.gz
   wget --directory _tmp \
     http://cran.r-project.org/src/contrib/Archive/plyr/plyr_1.8.1.tar.gz
-  sudo R CMD INSTALL _tmp/Rcpp_0.11.4.tar.gz
-  sudo R CMD INSTALL _tmp/plyr_1.8.1.tar.gz 
-  sudo R -e \
+  $sudo R CMD INSTALL _tmp/Rcpp_0.11.4.tar.gz
+  $sudo R CMD INSTALL _tmp/plyr_1.8.1.tar.gz
+  $sudo
+  R -e \
     'install.packages(c("reshape2", "ggplot2", "data.table"), repos="http://cran.rstudio.com/")'
+  else
+    # this might work for all others
+    $sudo
+    R -e \
+      'install.packages(c("plyr","Rcpp","reshape2", "ggplot2", "data.table"), repos="http://cran.rstudio.com/")'
+  fi
 }
 
 # Keep Shiny separate, since it seems to install a lot of dependencies.
 shiny() {
-  sudo R -e \
+  $sudo \
+  R -e \
     'install.packages(c("shiny"), repos="http://cran.rstudio.com/")'
 }
 
@@ -61,7 +83,7 @@ shiny() {
 #
 
 install-minimal() {
-  native-packages
+  [[ "$_os" = "ubuntu" ]] && native-packages
   r-packages
 }
 
@@ -82,6 +104,11 @@ shiny-smoke-test() {
 
 # Then set up a "firewall rule" in console.developers.google.com to open up
 # "tcp:6789".  Test it from the outside.
+
+find-OS
+
+echo $_os
+exit 2
 
 if test $# -eq 0 ; then
   install-most
