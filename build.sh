@@ -26,11 +26,19 @@ die() {
 }
 
 run-markdown() {
-  local md=`which markdown 2>/dev/null|| echo "cat"`
-  if [[ "$md" = "cat" ]]
+  local _pandoc=FALSE
+  local md=`which markdown 2>/dev/null`
+  if [[ -z $md  ]]
+    then
+    local md=`which pandoc 2>/dev/null`
+    # additional pandoc parameter
+    local _pandoc=TRUE
+  fi
+  if [[ -z $md ]]
     then
     local md=`which multimarkdown 2>/dev/null|| echo "cat"`
   fi
+
 
   # Markdown is output unstyled; make it a little more readable.
   cat <<EOF
@@ -47,8 +55,15 @@ run-markdown() {
     <body style="margin: 0 auto; width: 40em; text-align: left;">
       <!-- INSERT LATCH HTML -->
 EOF
-
+case $_pandoc in
+  FALSE)
   $md "$@"
+  ;;
+  TRUE)
+  $md "$@" -t html
+  #-t html -o "$(basename $@ .md).html"
+  ;;
+esac
 
   cat <<EOF
     </body>
